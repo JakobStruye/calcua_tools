@@ -1,0 +1,29 @@
+# !! Does currently NOT work as intended with BCI
+# MIOpen runs for around 20min trying to find optimal kernels
+# and then runs out of VRAM
+
+Bootstrap: docker
+# No RockyLinux container available, use Ubuntu instead
+# This may need further work to run properly on RL, to be checked
+# ROCm version matches CalcUA/Arcturus
+# Already contains pytorch
+From: rocm/pytorch:rocm7.0.2_ubuntu24.04_py3.12_pytorch_release_2.9.1
+
+%post
+
+    python -m pip install --no-cache-dir --upgrade pip
+    # Further packages need wheel and older version of setuptools
+    python -m pip install --no-cache-dir wheel setuptools==80.9.0
+    python -m pip install --no-cache-dir --no-build-isolation \
+        scipy \
+        dominate \
+        visdom \
+        kornia \
+        scikit-image \
+        tqdm \
+        opencv-contrib-python
+
+    # Visdom requires writable file system on first run
+    timeout 20 python -m visdom.server -p 8097 || true
+
+

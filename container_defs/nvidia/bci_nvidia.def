@@ -1,0 +1,41 @@
+Bootstrap: docker
+#Matches RockyLinux and CUDA version on CalcUA/Ampere
+From: nvidia/cuda:12.8.0-cudnn-devel-rockylinux9
+
+%post
+    #Update everything just in case, install newer version of Python
+    #May not be necessary to update Python
+    dnf -y update && \
+    dnf -y install \
+        python3.12 \
+        python3.12-devel \
+        python3.12-pip \
+        git && \
+    dnf clean all
+
+    #Make Python3.12 default
+    ln -sf /usr/bin/python3.12 /usr/local/bin/python
+
+    python -m pip install --no-cache-dir --upgrade pip
+    # Install the appropriate versions of torch and vision/audio
+    # Make sure to do this BEFORE installing any Python packages that may need torch
+    python -m pip install --no-cache-dir \
+        torch==2.11.0 torchvision==0.26.0 torchaudio==2.11.0 \
+        --index-url https://download.pytorch.org/whl/cu128
+
+    # Wheel needed to install some other packages
+    python -m pip install --no-cache-dir wheel
+
+    # BCI requirements
+    python -m pip install --no-cache-dir --no-build-isolation \
+        scipy \
+        dominate \
+        visdom \
+        kornia \
+        scikit-image \
+        tqdm \
+        opencv-contrib-python
+
+    # Visdom requires writable file system on first run
+    timeout 20 /usr/local/bin/python -m visdom.server -p 8097 || true
+
